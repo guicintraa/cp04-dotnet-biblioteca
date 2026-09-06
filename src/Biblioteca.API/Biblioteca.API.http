@@ -1,0 +1,99 @@
+@Biblioteca_HostAddress = https://localhost:7290
+@CorrelationId = demo-cp04-001
+
+### Diagnóstico completo (Health Checks)
+GET {{Biblioteca_HostAddress}}/health
+Accept: application/json
+
+### Sonda de liveness
+GET {{Biblioteca_HostAddress}}/health/vivo
+
+### Sonda de readiness (inclui o banco)
+GET {{Biblioteca_HostAddress}}/health/pronto
+
+### Listar autores com os livros associados
+GET {{Biblioteca_HostAddress}}/api/autores
+X-Correlation-ID: {{CorrelationId}}
+
+### Buscar autor por ID
+GET {{Biblioteca_HostAddress}}/api/autores/1
+X-Correlation-ID: {{CorrelationId}}
+
+### Cadastrar autor (abre Span e incrementa a métrica)
+POST {{Biblioteca_HostAddress}}/api/autores
+Content-Type: application/json
+X-Correlation-ID: {{CorrelationId}}
+
+{
+  "nome": "Graciliano Ramos",
+  "nacionalidade": "Brasileira",
+  "dataNascimento": "1892-10-27"
+}
+
+### Cadastrar autor inválido (Span com status Error, métrica erro_validacao)
+POST {{Biblioteca_HostAddress}}/api/autores
+Content-Type: application/json
+X-Correlation-ID: {{CorrelationId}}
+
+{
+  "nome": "",
+  "nacionalidade": "Brasileira",
+  "dataNascimento": "1892-10-27"
+}
+
+### Listar livros com os autores associados
+GET {{Biblioteca_HostAddress}}/api/livros
+X-Correlation-ID: {{CorrelationId}}
+
+### Cadastrar livro com DOIS autores (prova do relacionamento N:N)
+POST {{Biblioteca_HostAddress}}/api/livros
+Content-Type: application/json
+X-Correlation-ID: {{CorrelationId}}
+
+{
+  "titulo": "Contos Reunidos",
+  "isbn": "9788500000123",
+  "preco": 79.90,
+  "estoque": 4,
+  "anoPublicacao": 2021,
+  "autoresIds": [1, 2]
+}
+
+### Cadastrar livro com preço inválido (retorna 400 e loga em nível ERR)
+POST {{Biblioteca_HostAddress}}/api/livros
+Content-Type: application/json
+X-Correlation-ID: {{CorrelationId}}
+
+{
+  "titulo": "Livro Inválido",
+  "isbn": "9788599999999",
+  "preco": -50.00,
+  "estoque": 5,
+  "anoPublicacao": 2021,
+  "autoresIds": [1]
+}
+
+### Atualizar livro e refazer o vínculo com os autores
+PUT {{Biblioteca_HostAddress}}/api/livros/1
+Content-Type: application/json
+X-Correlation-ID: {{CorrelationId}}
+
+{
+  "titulo": "Dom Casmurro - Edição Comentada",
+  "isbn": "9788535910663",
+  "preco": 59.90,
+  "estoque": 15,
+  "anoPublicacao": 1899,
+  "autoresIds": [1, 2]
+}
+
+### Registrar empréstimo (dá baixa no estoque e incrementa emprestimos_total)
+POST {{Biblioteca_HostAddress}}/api/livros/1/emprestimos
+X-Correlation-ID: {{CorrelationId}}
+
+### Buscar livro inexistente (retorna 404)
+GET {{Biblioteca_HostAddress}}/api/livros/999
+
+### Remover livro
+DELETE {{Biblioteca_HostAddress}}/api/livros/3
+X-Correlation-ID: {{CorrelationId}}
